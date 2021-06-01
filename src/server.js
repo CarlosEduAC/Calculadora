@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const cors = require('cors');
 
 const app = express();
@@ -19,9 +20,27 @@ app.post('/cadastro', (request, response) => {
     throw new Error('Usuário já cadastrado');
   }
 
-  usuarios.push({ nome, email, senha });
+  const hash = bcrypt.hashSync(senha, bcrypt.genSaltSync(10));
 
-  return response.status(201).json({ resultado: { nome, email, senha } });
+  usuarios.push({ nome, email, senha: hash });
+
+  return response.status(201).json({ resultado: { nome, email, senha: hash } });
+});
+
+app.post('/login', (request, response) => {
+  const { email, senha } = request.body;
+
+  const existeUsuario = usuarios.find(usuario => usuario.email === email);
+
+  if (!existeUsuario) {
+    throw new Error('Usuário não cadastrado');
+  }
+
+  if (!bcrypt.compareSync(senha, existeUsuario.senha)) {
+    throw new Error('Senha inválida');
+  }
+
+  return response.status(201).json({ message: `Bem vindo ${existeUsuario.nome}` });
 });
 
 app.post('/calculadora', (request, response) => {
